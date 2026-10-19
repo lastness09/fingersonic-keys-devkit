@@ -4,6 +4,29 @@ Public hardware and firmware-development documentation for Fingersonic Keys. **D
 
 [Developer Kits](https://fingersonic.com/developers/) · [Guitar developer kit](https://github.com/lastness09/fingersonic-guitar-devkit) · [Official Keys updater](https://update.fingersonic.cn/FingersonicUploader/)
 
+## Develop with an AI coding assistant
+
+Give your AI coding assistant this repository URL and describe the instrument, controller or application you want to build. This guide is the hardware contract for a **new, independently implemented App0 firmware project**. It does not require access to Fingersonic's private product firmware. Hardware interface documentation does not grant access to, or publish, the official firmware source.
+
+You can start with this prompt:
+
+> Read https://github.com/lastness09/fingersonic-keys-devkit before writing code. Develop a new Fingersonic Keys App0 application that implements the behavior I describe below. Use the documented GPIO mapping, 24-key dual-contact matrix, two encoders, 24 LEDs, I2S output and USB/BLE MIDI interfaces as needed. Use public libraries and original application code. Produce a complete project with pinned dependencies, build instructions and an App0 BIN that fits the 2 MiB slot. Preserve the factory bootloader, partition table and App1 uploader. Implement and test an App1 recovery gesture before optional features. Power, charging and battery-level management are handled by a separate chip and require no custom application management. Do not invent battery GPIOs or assume unavailable board features. State assumptions, identify any missing information and provide a hardware test checklist. My desired behavior is: [describe your application here].
+
+### Requirements for AI-generated projects
+
+- Deliver a self-contained project: project files, application entry point, build configuration, exact dependency versions and commands to build from a clean checkout. The proprietary Fingersonic application is not a dependency.
+- Treat the GPIO and partition tables below as fixed interfaces. Enable OPI PSRAM and use a 16 MB flash target. Keep the compiled App0 image within `0x200000` bytes.
+- Initialize the recovery gesture before optional peripherals, sound loading or other work that could fail. Check the OTA partition selection result before restarting into App1. Do not make normal recovery depend solely on Bluetooth.
+- Bring up one interface at a time: recovery, encoders, matrix note detection, LEDs, MIDI and audio. Add velocity and higher-level musical behavior after basic input and output are working.
+- Use public Arduino or ESP-IDF interfaces for peripheral access. Library examples may need adaptation to the selected core version; do not assume that all upstream releases work together.
+- Keep the two contacts of each key distinct until velocity calculation is complete. Apply the documented key-index swaps. Match LED ordering against the physical device during testing.
+- Produce an application BIN for the existing App0 slot, not a merged full-flash image. Do not include factory provisioning, erase-all commands or eFuse changes in the normal installation workflow.
+- Document your recovery entry gesture, installation steps, tested hardware production date and dependency versions. If a required uploader detail is unverified, identify it rather than inventing an endpoint or flashing command.
+
+### Power, charging and battery level
+
+**Power, charging and battery-level management are handled by a separate chip. Custom App0 firmware does not need to implement or manage them.** Do not add charger control, battery voltage measurement, fuel-gauge drivers or a software power-management task as a prerequisite for using this hardware. No battery ADC pin, charge-control GPIO or battery-chip bus protocol is specified by this guide; do not assign spare-looking pins to those functions.
+
 ## Read this before installing custom firmware
 
 | Device production date | Entering the preinstalled App1 uploader |
@@ -61,7 +84,31 @@ This is a hardware guide, not a buildable copy of the proprietary application. C
 4. Choose only the public libraries your application needs: [Adafruit NeoPixel](https://github.com/adafruit/Adafruit_NeoPixel), [Control Surface](https://github.com/tttapa/Control-Surface), [Arduino BLE-MIDI](https://github.com/lathoub/Arduino-BLE-MIDI), or the [Arduino MIDI Library](https://github.com/FortySevenEffects/arduino_midi_library). Public upstream libraries retain their respective licenses. There is no complete tested dependency lockfile in this documentation release.
 5. Implement and test **App1 switching first**, then encoders, keyboard scanning, LEDs, USB/BLE MIDI and I2S audio. Keep lengthy work out of audio callbacks and avoid excessive logging during audio playback.
 6. Compile **App0 only**. Its allocated slot is **2 MiB (0x200000 bytes)**; check the built application's size before attempting installation. Do not upload a merged flash image or an ELF file as App0.
-7. Enter App1 using the gesture appropriate for the production date. Use the official Keys updater's documented custom-firmware workflow where supported; verify the displayed device and upload type before sending a file. This guide does not establish a raw custom-App0 HTTP endpoint or promise that every updater version accepts custom firmware.
+7. Enter App1 using the gesture appropriate for the production date. Upload your application BIN through the preinstalled App1 uploader as described below. The official web updater provides official recovery files; it does not supply your custom application's source or build it for you.
+
+### Upload your custom App0 BIN through App1
+
+The current official Keys updater sends files to the preinstalled device uploader using this interface:
+
+| Item | Value |
+| --- | --- |
+| Device hotspot | `Fingersonic` in the current official updater instructions; older firmware notes also use `FingersonicUploader` |
+| Hotspot connection instructions | Follow the connection instructions shown by the official Keys updater |
+| Device address | `http://192.168.4.1` |
+| Upload request | `POST /upload`, `multipart/form-data` |
+| File field | `file` |
+| Application file | An App0 application image with a `.bin` filename, no larger than `0x200000` bytes |
+| Sound-bank file | `.sf2`; separate from the application BIN |
+
+Prepare your BIN before switching away from your normal network. Enter App1, connect the computer to the device hotspot, then upload one file. For example, in PowerShell on Windows:
+
+```powershell
+curl.exe --fail --show-error -F "file=@C:\path\to\your-app.bin" http://192.168.4.1/upload
+```
+
+On macOS or Linux, use `curl` with the same arguments and your local file path. Let the upload finish and allow the device to restart. Do not send repeated uploads while it is processing. The current official web client uses the filename extension to distinguish BIN from SF2. This interface is verified against that client's request format; custom firmware installation has not been tested on physical hardware as part of this documentation release. Check the response and test your device's actual App1 version. A browser `no-cors` request does not by itself prove successful flashing.
+
+Do not upload bootloader, partition-table, filesystem or merged full-flash BINs through the App0 workflow. To return to the official application, enter App1 again and use the official Keys updater.
 
 Legacy build notes mention a BLE-MIDI compatibility adjustment: convert the result of `characteristic->getValue()` through `.c_str()` into a `std::string` if a core/library type mismatch occurs. Apply this only to a dependency combination that actually needs it, then record the versions.
 
@@ -90,13 +137,11 @@ The official Keys application uses SF2 sound banks. Internal usage notes specify
 
 Use the [official Keys updater](https://update.fingersonic.cn/FingersonicUploader/) to restore official App0 firmware. Restore the official sound bank separately if you replaced it. The normal recovery path requires reaching App1. On older devices with non-running custom App0, the official button gesture cannot execute and normal user recovery may be unavailable.
 
-## 中文：烧录与风险说明
+## Recovery checklist
 
-**2027 年 1 月 1 日及之后生产、安装新版恢复引导程序的设备：**关机后按住右边的旋钮 **Encoder2**，再开机，持续按住至少 **0.5 秒**，可强制进入 App1 烧录模式，即使 App0 无法运行。此方式仍要求 bootloader、分区表和 App1 完好，不是芯片 ROM 下载模式。
-
-**2027 年 1 月 1 日之前生产的设备：**必须由正常运行的 App0 调用 App1。官方固件的操作是：**按住左边第一个琴键 Key0，快速连续按左边旋钮 Encoder1 五次**。如果你的自定义固件无法启动，设备可能变砖，无法通过正常用户操作恢复，风险由你自行承担。建议开发之初就实现并测试自己的 App1 切换方式，例如开机早期识别按键操作、或在程序能够正常运行时通过蓝牙调用。蓝牙调用无法挽救完全不运行的 App0。保留可恢复路径，再进行后续开发。
-
-本仓库仅公开 GPIO、搭建方法、分区参考与恢复说明，不公开官方产品固件源码、恢复引导源码、量产脚本、密钥或服务器凭据。
+- **Devices produced on or after January 1, 2027 with the recovery bootloader:** hold the right-hand knob, **Encoder2**, while powering on, and keep holding for at least **0.5 seconds**. This enters App1 even if App0 cannot run, provided the bootloader, partition table and App1 are intact.
+- **Devices produced before January 1, 2027:** App0 must run to select App1. With official firmware, hold **Key0**, the leftmost keyboard key, and quickly press **Encoder1**, the left-hand knob, **five times**. Custom firmware that cannot start may leave the device bricked without normal user recovery. You accept this risk. Implement and test an early-startup button gesture or another App1 entry mechanism before experimenting. A Bluetooth command only works while your firmware and Bluetooth stack are running.
+- This repository publishes GPIO mappings, setup instructions, partition references and recovery guidance only. It does not publish official product firmware source, recovery bootloader source, production scripts, keys or server credentials.
 
 ## Support
 
