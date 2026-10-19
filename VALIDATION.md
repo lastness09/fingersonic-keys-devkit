@@ -25,7 +25,7 @@ Audit performed on October 19, 2026:
 | Source boundaries | Build component paths contain the public SDK and the newly created scaffold, with no dependency on the private product project |
 | Publication checks | English-only documents, local documentation links, explicit file allowlist and credential scan checked |
 
-The installed SDK's embedded version string is `v5.3.1-dirty`; tracked local differences were in unused SDK example shell scripts, outside the built components. This is a successful local build, not a claim that a pristine upstream checkout was independently rebuilt here. Install the pinned public release and retain your own build transcript. Binary hashes can differ with build metadata and environment. The hash above identifies the local audit artifact only; no firmware BIN is distributed by this documentation kit.
+The installed SDK's embedded version string is `v5.3.1-dirty`; local differences include unused SDK example shell scripts and an unused NimBLE submodule, outside this scaffold's built components. This is a successful local build, not a claim that a pristine upstream checkout was independently rebuilt here. Install the pinned public release and retain your own build transcript. Binary hashes can differ with build metadata and environment. The hash above identifies the local audit artifact only; no firmware BIN is distributed by this documentation kit.
 
 USB MIDI, BLE MIDI, LED output, key scanning, audio synthesis, SF2 playback, actual upload and recovery were not hardware-tested in this audit. Optional PSRAM configuration was checked without compiling or running a PSRAM-enabled application. These remain acceptance tasks for the developer and device owner.
 
