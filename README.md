@@ -2,7 +2,7 @@
 
 Public hardware and firmware-development documentation for Fingersonic Keys. **Documentation only: this repository does not distribute Fingersonic product firmware source, bootloader source, system images, encryption keys or production tools.** Build your own application using the documented interfaces and public libraries.
 
-[Developer Kits](https://fingersonic.com/developers/) · [Guitar developer kit](https://github.com/lastness09/fingersonic-guitar-devkit) · [Official Keys updater](https://update.fingersonic.cn/FingersonicUploader/)
+[Developer Kits](https://fingersonic.com/developers/) · [Neon Orbit open-source example](#open-source-example-neon-orbit) · [Guitar developer kit](https://github.com/lastness09/fingersonic-guitar-devkit) · [Official Keys updater](https://update.fingersonic.cn/FingersonicUploader/)
 
 ## Start here: give this repository to your AI
 
@@ -27,6 +27,16 @@ The kit supports independently written controllers, instruments and other App0 a
 | MIDI and performance | USB/BLE controller, chord controller, arpeggiator, step sequencer or generative performance tool | Implement the selected MIDI/performance behavior in App0; respect the same upload and storage constraints |
 
 For a sample-based project, convert WAV/AIFF or other source recordings into an SF2 bank on the computer before uploading. Direct WAV, AIFF, MP3, ZIP or arbitrary asset uploads are not supported by App1. A `.bin` upload is executable App0 firmware, not a general resource container. Do not work around the format rule by renaming assets or assuming a generic file-transfer service exists. No microphone or audio-input interface is documented, so live audio recording is not an assumed capability.
+
+## Open-source example: Neon Orbit
+
+[Neon Orbit - Arpeggiator & FM Synth](https://github.com/lastness09/fingersonic-keys-neon-orbit) is a complete, MIT-licensed community firmware for Fingersonic Keys. It demonstrates ten arpeggiator patterns, ten FM sounds, velocity-sensitive playing, encoder controls, note-reactive LEDs and a dedicated App1 recovery gesture. The maintainer has confirmed testing on the instrument; its publication build and 28 host tests also pass.
+
+Use this guide for the hardware interfaces and recovery requirements, then use the example repository for its complete source, controls, tests and reproducible build. Neon Orbit pins **Arduino ESP32 core 3.3.2** and **Adafruit NeoPixel 1.15.1**; that is a separately verified toolchain from this guide's ESP-IDF baseline. It generates audio directly and does not require an SF2 bank or PSRAM.
+
+[Browse the example source](https://github.com/lastness09/fingersonic-keys-neon-orbit) · [Controls and build instructions](https://github.com/lastness09/fingersonic-keys-neon-orbit#readme) · [Download firmware](https://github.com/lastness09/fingersonic-keys-neon-orbit/releases/tag/v0.1.0) · [Community firmware page](https://fingersonic.com/firmware/3/) · [Watch the hardware demo](https://www.youtube.com/shorts/pRCk6zMpI8U)
+
+For AI-assisted development, provide both this guide and the Neon Orbit repository. Ask the AI to retain the documented GPIO/partition contract and recovery path while changing the musical behavior. Review the example's MIT license and the licenses of any dependencies you reuse. The example is published separately; the official Fingersonic product firmware remains private.
 
 ## Develop with an AI coding assistant
 
